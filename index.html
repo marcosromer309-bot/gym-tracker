@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gym Tracker</title>
+<meta name="theme-color" content="#1A1A2E">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#0f0f1a; --card:#1a1a2e; --card2:#20223a; --border:#33355a;
+    --text:#eef0ff; --muted:#9aa0c3; --accent:#4fd1a5;
+    --push:#C0392B; --pull:#1A5276; --legs:#117A65; --upper:#117864; --lower:#7D6608;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);padding-bottom:80px;}
+  header{padding:18px 16px 8px;position:sticky;top:0;background:var(--bg);z-index:5;}
+  h1{font-size:20px;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:13px;}
+  .tabs{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;}
+  .tab{padding:8px 14px;border-radius:20px;background:var(--card2);color:var(--muted);border:1px solid var(--border);font-size:13px;white-space:nowrap;cursor:pointer;}
+  .tab.active{background:var(--accent);color:#0f0f1a;font-weight:600;border-color:var(--accent);}
+  main{padding:0 16px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;margin-top:10px;}
+  label:first-child{margin-top:0;}
+  input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 10px;font-size:14px;}
+  .row{display:flex;gap:8px;}
+  .row>*{flex:1;}
+  .daytype-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+  .daytype-grid button{padding:8px 4px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:12px;cursor:pointer;}
+  .daytype-grid button.sel{color:#fff;font-weight:700;border-color:transparent;}
+  .daytype-grid button[data-t="PUSH"].sel{background:var(--push);}
+  .daytype-grid button[data-t="PULL"].sel{background:var(--pull);}
+  .daytype-grid button[data-t="LEGS"].sel{background:var(--legs);}
+  .daytype-grid button[data-t="UPPER"].sel{background:var(--upper);}
+  .daytype-grid button[data-t="LOWER"].sel{background:var(--lower);}
+  .ex{border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card2);}
+  .ex-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .ex-head strong{font-size:13px;color:var(--muted);}
+  .icon-btn{background:none;border:none;color:#e57373;font-size:18px;cursor:pointer;padding:2px 6px;}
+  .series-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px;}
+  .series-grid input{padding:8px 6px;font-size:13px;text-align:center;}
+  .btn{width:100%;padding:12px;border-radius:10px;border:none;font-weight:600;font-size:14px;cursor:pointer;margin-top:8px;}
+  .btn-primary{background:var(--accent);color:#0f0f1a;}
+  .btn-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border);}
+  .btn-danger{background:transparent;color:#e57373;border:1px solid #e57373;}
+  pre{white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;line-height:1.5;}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0f0f1a;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;}
+  .toast.show{opacity:1;}
+  .hist-item{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--card2);}
+  .hist-item .meta{font-size:12px;color:var(--muted);margin-bottom:6px;}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 10px;}
+  .fab-row{display:flex;gap:8px;position:fixed;bottom:0;left:0;right:0;padding:10px 16px 16px;background:linear-gradient(0deg,var(--bg) 60%,transparent);}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏋️ Gym Tracker</h1>
+  <div class="sub">Registra tu sesión y genera el reporte — funciona sin internet</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-view="log">Sesión</div>
+  <div class="tab" data-view="report">Reporte</div>
+  <div class="tab" data-view="history">Historial</div>
+</div>
+
+<main>
+  <!-- LOG VIEW -->
+  <section id="view-log">
+    <div class="card">
+      <label>Fecha</label>
+      <input type="date" id="f-date">
+      <div class="row">
+        <div>
+          <label>Día #</label>
+          <input type="number" id="f-daynum" min="1" value="1">
+        </div>
+        <div>
+          <label>Tipo de día</label>
+        </div>
+      </div>
+      <div class="daytype-grid" id="daytype-grid">
+        <button data-t="PUSH">PUSH</button>
+        <button data-t="PULL">PULL</button>
+        <button data-t="LEGS">LEGS</button>
+        <button data-t="UPPER">UPPER</button>
+        <button data-t="LOWER">LOWER</button>
+      </div>
+      <div class="row">
+        <div>
+          <label>🕐 Entrada</label>
+          <input type="time" id="f-entry">
+        </div>
+        <div>
+          <label>🏁 Salida</label>
+          <input type="time" id="f-exit">
+        </div>
+      </div>
+    </div>
+
+    <div id="exercise-list"></div>
+
+    <button class="btn btn-secondary" id="btn-add-ex">+ Añadir ejercicio</button>
+  </section>
+
+  <!-- REPORT VIEW -->
+  <section id="view-report" style="display:none;">
+    <div class="card">
+      <pre id="report-text">Aún no hay datos. Completa la sesión primero.</pre>
+      <button class="btn btn-primary" id="btn-copy">📋 Copiar reporte</button>
+      <button class="btn btn-secondary" id="btn-finish">✅ Guardar en historial y limpiar</button>
+    </div>
+  </section>
+
+  <!-- HISTORY VIEW -->
+  <section id="view-history" style="display:none;">
+    <div id="history-list"></div>
+    <button class="btn btn-danger" id="btn-clear-hist">Borrar historial</button>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DAY_EMOJI = {PUSH:'🔴',PULL:'🔵',LEGS:'🟢',UPPER:'🟡',LOWER:'🟠'};
+const DRAFT_KEY = 'gymtracker_draft_v1';
+const HIST_KEY = 'gymtracker_history_v1';
+
+let state = loadDraft() || {
+  date: todayISO(), dayType: 'PUSH', dayNum: 1, entry: '', exit: '',
+  exercises: [emptyExercise()]
+};
+
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function emptyExercise(){ return { name:'', rpe:'', series:['','','',''] }; }
+function loadDraft(){ try{ return JSON.parse(localStorage.getItem(DRAFT_KEY)); }catch(e){ return null; } }
+function saveDraft(){ localStorage.setItem(DRAFT_KEY, JSON.stringify(state)); }
+function loadHistory(){ try{ return JSON.parse(localStorage.getItem(HIST_KEY)) || []; }catch(e){ return []; } }
+function saveHistory(list){ localStorage.setItem(HIST_KEY, JSON.stringify(list)); }
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+// ---- Rendering ----
+function renderTop(){
+  document.getElementById('f-date').value = state.date;
+  document.getElementById('f-daynum').value = state.dayNum;
+  document.getElementById('f-entry').value = state.entry;
+  document.getElementById('f-exit').value = state.exit;
+  document.querySelectorAll('#daytype-grid button').forEach(b=>{
+    b.classList.toggle('sel', b.dataset.t === state.dayType);
+  });
+}
+
+function renderExercises(){
+  const list = document.getElementById('exercise-list');
+  list.innerHTML = '';
+  state.exercises.forEach((ex, i)=>{
+    const div = document.createElement('div');
+    div.className = 'ex';
+    div.innerHTML = `
+      <div class="ex-head">
+        <strong>Ejercicio ${i+1}</strong>
+        <button class="icon-btn" data-remove="${i}">✕</button>
+      </div>
+      <label>Nombre</label>
+      <input type="text" data-field="name" data-idx="${i}" value="${escapeHtml(ex.name)}" placeholder="Ej: Press banca plano">
+      <div class="series-grid">
+        ${ex.series.map((s,si)=>`<input type="text" data-series="${si}" data-idx="${i}" value="${escapeHtml(s)}" placeholder="S${si+1}: kg×reps">`).join('')}
+      </div>
+      <label>RPE</label>
+      <input type="number" min="1" max="10" data-field="rpe" data-idx="${i}" value="${escapeHtml(ex.rpe)}" placeholder="1-10">
+    `;
+    list.appendChild(div);
+  });
+}
+
+function escapeHtml(v){ return (v||'').toString().replace(/"/g,'&quot;'); }
+
+function renderAll(){ renderTop(); renderExercises(); saveDraft(); }
+
+// ---- Events ----
+document.getElementById('f-date').addEventListener('input', e=>{ state.date=e.target.value; saveDraft(); });
+document.getElementById('f-daynum').addEventListener('input', e=>{ state.dayNum=e.target.value; saveDraft(); });
+document.getElementById('f-entry').addEventListener('input', e=>{ state.entry=e.target.value; saveDraft(); });
+document.getElementById('f-exit').addEventListener('input', e=>{ state.exit=e.target.value; saveDraft(); });
+
+document.getElementById('daytype-grid').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  state.dayType = b.dataset.t; renderTop(); saveDraft();
+});
+
+document.getElementById('exercise-list').addEventListener('input', e=>{
+  const idx = e.target.dataset.idx; if(idx===undefined) return;
+  if(e.target.dataset.field==='name') state.exercises[idx].name = e.target.value;
+  if(e.target.dataset.field==='rpe') state.exercises[idx].rpe = e.target.value;
+  if(e.target.dataset.series!==undefined) state.exercises[idx].series[e.target.dataset.series] = e.target.value;
+  saveDraft();
+});
+
+document.getElementById('exercise-list').addEventListener('click', e=>{
+  const idx = e.target.dataset.remove;
+  if(idx===undefined) return;
+  state.exercises.splice(idx,1);
+  if(state.exercises.length===0) state.exercises.push(emptyExercise());
+  renderExercises(); saveDraft();
+});
+
+document.getElementById('btn-add-ex').addEventListener('click', ()=>{
+  state.exercises.push(emptyExercise());
+  renderExercises(); saveDraft();
+});
+
+// ---- Tabs ----
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    ['log','report','history'].forEach(v=>{
+      document.getElementById('view-'+v).style.display = (v===tab.dataset.view) ? '' : 'none';
+    });
+    if(tab.dataset.view === 'report') renderReport();
+    if(tab.dataset.view === 'history') renderHistory();
+  });
+});
+
+// ---- Report generation ----
+function fmtDate(iso){
+  if(!iso) return '__/__/____';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function buildReportText(){
+  const emoji = DAY_EMOJI[state.dayType] || '⚪';
+  let lines = [];
+  lines.push(`📅 ${fmtDate(state.date)} — DÍA ${state.dayNum} — ${state.dayType}`);
+  lines.push(`🕐 Entrada: ${state.entry||'--:--'}  |  🏁 Salida: ${state.exit||'--:--'}`);
+  lines.push('─'.repeat(36));
+  state.exercises.forEach((ex,i)=>{
+    if(!ex.name) return;
+    lines.push(`${i+1}. ${ex.name}`);
+    ex.series.forEach((s,si)=>{
+      if(!s) return;
+      const parts = s.split('×');
+      if(parts.length===2){
+        lines.push(`   Serie ${si+1}: ${parts[0].trim()}kg × ${parts[1].trim()} reps`);
+      } else {
+        lines.push(`   Serie ${si+1}: ${s}`);
+      }
+    });
+    if(ex.rpe) lines.push(`   RPE: ${ex.rpe}`);
+  });
+  return lines.join('\n');
+}
+
+function renderReport(){
+  document.getElementById('report-text').textContent = buildReportText();
+}
+
+document.getElementById('btn-copy').addEventListener('click', async ()=>{
+  const txt = buildReportText();
+  try{
+    await navigator.clipboard.writeText(txt);
+    toast('Reporte copiado ✓');
+  }catch(e){
+    toast('No se pudo copiar, selecciona el texto manualmente');
+  }
+});
+
+document.getElementById('btn-finish').addEventListener('click', ()=>{
+  const txt = buildReportText();
+  const hist = loadHistory();
+  hist.unshift({ date: state.date, dayType: state.dayType, dayNum: state.dayNum, text: txt, savedAt: Date.now() });
+  saveHistory(hist);
+  state = { date: todayISO(), dayType:'PUSH', dayNum: Number(state.dayNum)+1, entry:'', exit:'', exercises:[emptyExercise()] };
+  renderAll();
+  document.querySelector('.tab[data-view="log"]').click();
+  toast('Guardado en historial ✓');
+});
+
+// ---- History ----
+function renderHistory(){
+  const hist = loadHistory();
+  const el = document.getElementById('history-list');
+  if(hist.length===0){ el.innerHTML = '<div class="empty">Sin sesiones guardadas todavía.</div>'; return; }
+  el.innerHTML = hist.map((h,i)=>`
+    <div class="hist-item">
+      <div class="meta">${DAY_EMOJI[h.dayType]||''} ${fmtDate(h.date)} — DÍA ${h.dayNum}: ${h.dayType}</div>
+      <button class="btn btn-secondary" data-copy="${i}">📋 Copiar</button>
+    </div>
+  `).join('');
+}
+
+document.getElementById('history-list').addEventListener('click', async e=>{
+  const idx = e.target.dataset.copy; if(idx===undefined) return;
+  const hist = loadHistory();
+  try{ await navigator.clipboard.writeText(hist[idx].text); toast('Copiado ✓'); }
+  catch(err){ toast('No se pudo copiar'); }
+});
+
+document.getElementById('btn-clear-hist').addEventListener('click', ()=>{
+  if(confirm('¿Borrar todo el historial guardado en este dispositivo?')){
+    saveHistory([]); renderHistory();
+  }
+});
+
+// ---- Init ----
+if(!state.date) state.date = todayISO();
+if(!state.entry){
+  const now = new Date();
+  state.entry = now.toTimeString().slice(0,5);
+}
+renderAll();
+
+// ---- Service worker (offline) ----
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
