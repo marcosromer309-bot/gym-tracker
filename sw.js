@@ -1,5 +1,5 @@
-const CACHE_NAME = 'gym-tracker-v1';
-const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE_NAME = 'gym-tracker-v2';
+const ASSETS = ['./', './index.html', './app.js', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -28,6 +28,4 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       }).catch(() => cached);
-    })
-  );
-});
+    
