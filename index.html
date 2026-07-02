@@ -47,13 +47,13 @@
   .btn-primary{background:var(--accent);color:#0f0f1a;}
   .btn-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border);}
   .btn-danger{background:transparent;color:#e57373;border:1px solid #e57373;}
+  .btn-outline{background:transparent;color:var(--accent);border:1px solid var(--accent);}
   pre{white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;line-height:1.5;}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0f0f1a;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;}
   .toast.show{opacity:1;}
   .hist-item{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--card2);}
   .hist-item .meta{font-size:12px;color:var(--muted);margin-bottom:6px;}
   .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 10px;}
-  .fab-row{display:flex;gap:8px;position:fixed;bottom:0;left:0;right:0;padding:10px 16px 16px;background:linear-gradient(0deg,var(--bg) 60%,transparent);}
 </style>
 </head>
 <body>
@@ -90,6 +90,7 @@
         <button data-t="UPPER">UPPER</button>
         <button data-t="LOWER">LOWER</button>
       </div>
+      <button class="btn btn-outline" id="btn-load-routine">📋 Cargar ejercicios de la rutina (<span id="routine-daytype-label">PUSH</span>)</button>
       <div class="row">
         <div>
           <label>🕐 Entrada</label>
@@ -123,6 +124,8 @@
   </section>
 </main>
 
+<datalist id="exercise-names"></datalist>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -130,13 +133,60 @@ const DAY_EMOJI = {PUSH:'🔴',PULL:'🔵',LEGS:'🟢',UPPER:'🟡',LOWER:'🟠'
 const DRAFT_KEY = 'gymtracker_draft_v1';
 const HIST_KEY = 'gymtracker_history_v1';
 
+// Rutina PPLUL — ejercicios exactos de la hoja "💪 Rutina Semanal" del Excel,
+// en el orden en que se entrenan cada día.
+const ROUTINE = {
+  PUSH: [
+    'Press de banca plano con barra',
+    'Press inclinado con mancuernas (30–45°)',
+    'Press militar con mancuernas sentado',
+    'Elevaciones laterales con mancuernas',
+    'Fondos en paralelas (o press en máquina)',
+    'Extensión de tríceps en polea (cuerda)'
+  ],
+  PULL: [
+    'Dominadas (o jalón al pecho en polea)',
+    'Remo con barra (Pendlay o estándar)',
+    'Remo con mancuerna a una mano',
+    'Face Pull en polea alta (cuerda)',
+    'Curl de bíceps con barra EZ',
+    'Curl martillo con mancuernas alternado'
+  ],
+  LEGS: [
+    'Sentadilla con barra (trasera)',
+    'Prensa de piernas (45°)',
+    'Extensión de cuádriceps en máquina',
+    'Peso muerto rumano con barra',
+    'Curl femoral tumbado en máquina',
+    'Elevación de pantorrilla de pie (máquina o escalón)'
+  ],
+  UPPER: [
+    'Press banca inclinado con barra (30°)',
+    'Jalón al pecho en polea agarre cerrado',
+    'Press Arnold con mancuernas',
+    'Remo en polea baja sentado (agarre ancho)',
+    'Aperturas con mancuernas (banco plano)',
+    'Elevaciones laterales en polea baja',
+    'Curl predicador con barra EZ',
+    'Press francés con mancuernas'
+  ],
+  LOWER: [
+    'Peso muerto convencional con barra',
+    'Sentadilla búlgara con mancuernas',
+    'Hip Thrust con barra en banco',
+    'Curl femoral sentado en máquina',
+    'Zancadas caminando con mancuernas',
+    'Elevación de pantorrilla sentado (máquina)'
+  ]
+};
+
 let state = loadDraft() || {
   date: todayISO(), dayType: 'PUSH', dayNum: 1, entry: '', exit: '',
   exercises: [emptyExercise()]
 };
 
 function todayISO(){ return new Date().toISOString().slice(0,10); }
-function emptyExercise(){ return { name:'', rpe:'', series:['','','',''] }; }
+function emptyExercise(name){ return { name: name||'', rpe:'', series:['','','',''] }; }
 function loadDraft(){ try{ return JSON.parse(localStorage.getItem(DRAFT_KEY)); }catch(e){ return null; } }
 function saveDraft(){ localStorage.setItem(DRAFT_KEY, JSON.stringify(state)); }
 function loadHistory(){ try{ return JSON.parse(localStorage.getItem(HIST_KEY)) || []; }catch(e){ return []; } }
@@ -148,6 +198,14 @@ function toast(msg){
   setTimeout(()=>t.classList.remove('show'), 1800);
 }
 
+// ---- Datalist de nombres de ejercicio (autocompletar al escribir) ----
+function populateDatalist(){
+  const dl = document.getElementById('exercise-names');
+  const all = new Set();
+  Object.values(ROUTINE).forEach(list => list.forEach(n => all.add(n)));
+  dl.innerHTML = Array.from(all).map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+}
+
 // ---- Rendering ----
 function renderTop(){
   document.getElementById('f-date').value = state.date;
@@ -157,6 +215,7 @@ function renderTop(){
   document.querySelectorAll('#daytype-grid button').forEach(b=>{
     b.classList.toggle('sel', b.dataset.t === state.dayType);
   });
+  document.getElementById('routine-daytype-label').textContent = state.dayType;
 }
 
 function renderExercises(){
@@ -171,7 +230,7 @@ function renderExercises(){
         <button class="icon-btn" data-remove="${i}">✕</button>
       </div>
       <label>Nombre</label>
-      <input type="text" data-field="name" data-idx="${i}" value="${escapeHtml(ex.name)}" placeholder="Ej: Press banca plano">
+      <input type="text" list="exercise-names" data-field="name" data-idx="${i}" value="${escapeHtml(ex.name)}" placeholder="Ej: Press banca plano">
       <div class="series-grid">
         ${ex.series.map((s,si)=>`<input type="text" data-series="${si}" data-idx="${i}" value="${escapeHtml(s)}" placeholder="S${si+1}: kg×reps">`).join('')}
       </div>
@@ -195,6 +254,17 @@ document.getElementById('f-exit').addEventListener('input', e=>{ state.exit=e.ta
 document.getElementById('daytype-grid').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   state.dayType = b.dataset.t; renderTop(); saveDraft();
+});
+
+document.getElementById('btn-load-routine').addEventListener('click', ()=>{
+  const preset = ROUTINE[state.dayType] || [];
+  const hasData = state.exercises.some(ex => ex.name || ex.rpe || ex.series.some(s=>s));
+  if(hasData && !confirm(`Esto reemplaza los ${state.exercises.length} ejercicio(s) actuales por los ${preset.length} de ${state.dayType}. ¿Continuar?`)){
+    return;
+  }
+  state.exercises = preset.map(name => emptyExercise(name));
+  renderExercises(); saveDraft();
+  toast(`Ejercicios de ${state.dayType} cargados ✓`);
 });
 
 document.getElementById('exercise-list').addEventListener('input', e=>{
@@ -239,93 +309,10 @@ function fmtDate(iso){
 }
 
 function buildReportText(){
-  const emoji = DAY_EMOJI[state.dayType] || '⚪';
   let lines = [];
   lines.push(`📅 ${fmtDate(state.date)} — DÍA ${state.dayNum} — ${state.dayType}`);
   lines.push(`🕐 Entrada: ${state.entry||'--:--'}  |  🏁 Salida: ${state.exit||'--:--'}`);
   lines.push('─'.repeat(36));
   state.exercises.forEach((ex,i)=>{
     if(!ex.name) return;
-    lines.push(`${i+1}. ${ex.name}`);
-    ex.series.forEach((s,si)=>{
-      if(!s) return;
-      const parts = s.split('×');
-      if(parts.length===2){
-        lines.push(`   Serie ${si+1}: ${parts[0].trim()}kg × ${parts[1].trim()} reps`);
-      } else {
-        lines.push(`   Serie ${si+1}: ${s}`);
-      }
-    });
-    if(ex.rpe) lines.push(`   RPE: ${ex.rpe}`);
-  });
-  return lines.join('\n');
-}
-
-function renderReport(){
-  document.getElementById('report-text').textContent = buildReportText();
-}
-
-document.getElementById('btn-copy').addEventListener('click', async ()=>{
-  const txt = buildReportText();
-  try{
-    await navigator.clipboard.writeText(txt);
-    toast('Reporte copiado ✓');
-  }catch(e){
-    toast('No se pudo copiar, selecciona el texto manualmente');
-  }
-});
-
-document.getElementById('btn-finish').addEventListener('click', ()=>{
-  const txt = buildReportText();
-  const hist = loadHistory();
-  hist.unshift({ date: state.date, dayType: state.dayType, dayNum: state.dayNum, text: txt, savedAt: Date.now() });
-  saveHistory(hist);
-  state = { date: todayISO(), dayType:'PUSH', dayNum: Number(state.dayNum)+1, entry:'', exit:'', exercises:[emptyExercise()] };
-  renderAll();
-  document.querySelector('.tab[data-view="log"]').click();
-  toast('Guardado en historial ✓');
-});
-
-// ---- History ----
-function renderHistory(){
-  const hist = loadHistory();
-  const el = document.getElementById('history-list');
-  if(hist.length===0){ el.innerHTML = '<div class="empty">Sin sesiones guardadas todavía.</div>'; return; }
-  el.innerHTML = hist.map((h,i)=>`
-    <div class="hist-item">
-      <div class="meta">${DAY_EMOJI[h.dayType]||''} ${fmtDate(h.date)} — DÍA ${h.dayNum}: ${h.dayType}</div>
-      <button class="btn btn-secondary" data-copy="${i}">📋 Copiar</button>
-    </div>
-  `).join('');
-}
-
-document.getElementById('history-list').addEventListener('click', async e=>{
-  const idx = e.target.dataset.copy; if(idx===undefined) return;
-  const hist = loadHistory();
-  try{ await navigator.clipboard.writeText(hist[idx].text); toast('Copiado ✓'); }
-  catch(err){ toast('No se pudo copiar'); }
-});
-
-document.getElementById('btn-clear-hist').addEventListener('click', ()=>{
-  if(confirm('¿Borrar todo el historial guardado en este dispositivo?')){
-    saveHistory([]); renderHistory();
-  }
-});
-
-// ---- Init ----
-if(!state.date) state.date = todayISO();
-if(!state.entry){
-  const now = new Date();
-  state.entry = now.toTimeString().slice(0,5);
-}
-renderAll();
-
-// ---- Service worker (offline) ----
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
-  });
-}
-</script>
-</body>
-</html>
+    lines.push(`${
