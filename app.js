@@ -590,9 +590,20 @@ function closeModalDirect() {
   }
 })();
 
-// ── PWA: registrar service worker para uso offline ─────────────────────────
+// ── PWA: registrar service worker para uso offline, y recargar automáticamente
+// cuando haya una versión nueva disponible (para que las actualizaciones se
+// apliquen solas sin tener que borrar caché a mano) ─────────────────────────
 if ('serviceWorker' in navigator) {
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      // Comprueba si hay una versión nueva cada vez que se abre la app
+      reg.update().catch(() => {});
+    }).catch(() => {});
   });
 }
