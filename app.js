@@ -96,6 +96,32 @@ function loadDraft() {
 // ── PESOS MÁXIMOS POR EJERCICIO (para saber con qué peso empezar la próxima vez) ──
 const MAXW_KEY = 'gymtracker_maxweights_v1';
 
+// Pesos de partida por defecto (últimos registrados), incluidos en la app para
+// que funcionen en cualquier dispositivo (móvil, ordenador, etc.) sin depender
+// del almacenamiento local de un navegador concreto. Una vez el usuario registre
+// pesos nuevos en un dispositivo, esos datos (guardados en su localStorage) tienen
+// prioridad sobre estos valores por defecto.
+const DEFAULT_WEIGHTS = {
+  "Press de banca plano con barra": 60,
+  "Press inclinado con mancuernas": 50,
+  "Press militar con mancuernas": 22,
+  "Elevaciones laterales": 6.8,
+  "Fondos en paralelas": "PC",
+  "Extensión tríceps en polea (cuerda)": 20.3,
+  "Dominadas (o jalón al pecho)": "PC",
+  "Remo con barra": 50,
+  "Remo con mancuerna a una mano": 24,
+  "Face Pull en polea alta (cuerda)": 18,
+  "Curl de bíceps con barra EZ": 30,
+  "Curl martillo con mancuernas": 14,
+  "Sentadilla con barra (o Smith)": 80,
+  "Prensa de piernas (45°)": 240,
+  "Extensión de cuádriceps": 39,
+  "Peso muerto rumano con barra": 60,
+  "Curl femoral tumbado": 32,
+  "Elevación de pantorrilla de pie": 20
+};
+
 function loadMaxWeights() {
   try { return JSON.parse(localStorage.getItem(MAXW_KEY)) || {}; } catch (e) { return {}; }
 }
@@ -112,7 +138,9 @@ function parseKg(v) {
 
 function getSuggestedWeight(name) {
   const data = loadMaxWeights();
-  return data[name] !== undefined ? data[name] : null;
+  if (data[name] !== undefined) return data[name];
+  if (DEFAULT_WEIGHTS[name] !== undefined) return DEFAULT_WEIGHTS[name];
+  return null;
 }
 
 function updateMaxWeightForExercise(exIdx) {
