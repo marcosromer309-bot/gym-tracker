@@ -93,6 +93,41 @@ function loadDraft() {
   try { return JSON.parse(localStorage.getItem(DRAFT_KEY)); } catch (e) { return null; }
 }
 
+// ── PESOS MÁXIMOS POR EJERCICIO (para saber con qué peso empezar la próxima vez) ──
+const MAXW_KEY = 'gymtracker_maxweights_v1';
+
+function loadMaxWeights() {
+  try { return JSON.parse(localStorage.getItem(MAXW_KEY)) || {}; } catch (e) { return {}; }
+}
+
+function saveMaxWeights(data) {
+  try { localStorage.setItem(MAXW_KEY, JSON.stringify(data)); } catch (e) {}
+}
+
+function parseKg(v) {
+  if (v === undefined || v === null || v === '') return null;
+  const n = parseFloat(String(v).replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+
+function getSuggestedWeight(name) {
+  const data = loadMaxWeights();
+  return data[name] !== undefined ? data[name] : null;
+}
+
+function updateMaxWeightForExercise(exIdx) {
+  const ex = exerciseData[exIdx];
+  if (!ex || ex.skipped) return;
+  const weights = ex.sets.map(s => parseKg(s.kg)).filter(n => n !== null);
+  if (weights.length === 0) return;
+  const maxW = Math.max(...weights);
+  const data = loadMaxWeights();
+  if (data[ex.name] === undefined || maxW > data[ex.name]) {
+    data[ex.name] = maxW;
+    saveMaxWeights(data);
+  }
+}
+
 // Set today's date and current time as entry
 const dateInput = document.getElementById('sessionDate');
 const today = new Date();
@@ -302,6 +337,8 @@ function renderList() {
     const header = document.createElement('div');
     header.className = 'exercise-header';
 
+    const suggested = getSuggestedWeight(ex.name);
+
     const info = document.createElement('div');
     info.className = 'exercise-info';
     info.innerHTML = `
@@ -311,7 +348,7 @@ function renderList() {
         </button>
       </div>
       <div class="exercise-name">${ex.name}</div>
-      <div class="exercise-target">${ex.target}</div>
+      <div class="exercise-target">${ex.target}${suggested !== null ? ` · Empezar con <strong style="color:var(--accent)">${suggested}kg</strong>` : ''}</div>
     `;
 
     const rpeContainer = document.createElement('div');
@@ -341,7 +378,7 @@ function renderList() {
         row.className = 'set-row';
         row.innerHTML = `
           <span class="set-num">${setIdx+1}</span>
-          <input class="set-input" type="text" inputmode="decimal" placeholder="kg" value="${set.kg}"
+          <input class="set-input" type="text" inputmode="decimal" placeholder="${(setIdx===0 && !set.kg && suggested!==null) ? suggested : 'kg'}" value="${set.kg}"
             onchange="updateSet(${exIdx}, ${setIdx}, 'kg', this.value)"
             oninput="updateSet(${exIdx}, ${setIdx}, 'kg', this.value)">
           <input class="set-input" type="number" inputmode="numeric" placeholder="reps" value="${set.reps}"
@@ -377,6 +414,7 @@ function renderList() {
 
 function updateSet(exIdx, setIdx, field, value) {
   exerciseData[exIdx].sets[setIdx][field] = value;
+  if (field === 'kg') updateMaxWeightForExercise(exIdx);
   saveDraft();
 }
 
