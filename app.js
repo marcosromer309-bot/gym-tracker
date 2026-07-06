@@ -348,7 +348,7 @@ function renderList() {
         </button>
       </div>
       <div class="exercise-name">${ex.name}</div>
-      <div class="exercise-target">${ex.target}${suggested !== null ? ` · Empezar con <strong style="color:var(--accent)">${suggested}kg</strong>` : ''}</div>
+      <div class="exercise-target">${ex.target}${suggested !== null ? ` · Empezar con <strong style="color:var(--accent)">${suggested === 'PC' ? 'peso corporal' : suggested + 'kg'}</strong>` : ''}</div>
     `;
 
     const rpeContainer = document.createElement('div');
