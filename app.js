@@ -9,7 +9,7 @@ const DAYS = {
       { name: "Press militar con mancuernas", target: "3 × 8–12 · Deltoides", sets: 3, rpe: "8" },
       { name: "Elevaciones laterales", target: "4 × 12–15 · Deltoides medial", sets: 4, rpe: "9" },
       { name: "Fondos en paralelas", target: "3 × 8–12 · Tríceps / Pecho", sets: 3, rpe: "8" },
-      { name: "Extensión tríceps en polea (cuerda)", target: "3 × 10–15 · Tríceps", sets: 3, rpe: "9" },
+      { name: "Extensión tríceps en polea (cuerda)", target: "4 × 10–15 · Tríceps", sets: 4, rpe: "9" },
     ]
   },
   pull: {
@@ -22,7 +22,7 @@ const DAYS = {
       { name: "Remo con mancuerna a una mano", target: "3 × 8–12 · Dorsal unilateral", sets: 3, rpe: "8" },
       { name: "Face Pull en polea alta (cuerda)", target: "3 × 12–15 · Deltoides posterior", sets: 3, rpe: "9" },
       { name: "Curl de bíceps con barra EZ", target: "3 × 8–12 · Bíceps", sets: 3, rpe: "8" },
-      { name: "Curl martillo con mancuernas", target: "3 × 10–15 · Braquialis", sets: 3, rpe: "9" },
+      { name: "Curl martillo con mancuernas", target: "4 × 10–15 · Braquialis", sets: 4, rpe: "9" },
     ]
   },
   legs: {
@@ -35,7 +35,7 @@ const DAYS = {
       { name: "Extensión de cuádriceps", target: "3 × 10–15 · Cuádriceps aislado", sets: 3, rpe: "9" },
       { name: "Peso muerto rumano con barra", target: "3 × 8–12 · Isquiotibiales", sets: 3, rpe: "7" },
       { name: "Curl femoral tumbado", target: "3 × 10–15 · Isquiotibiales", sets: 3, rpe: "9" },
-      { name: "Elevación de pantorrilla de pie", target: "4 × 12–15 · Gemelos", sets: 4, rpe: "9" },
+      { name: "Elevación de pantorrilla de pie", target: "5 × 12–15 · Gemelos", sets: 5, rpe: "9" },
     ]
   },
   upper: {
@@ -49,8 +49,8 @@ const DAYS = {
       { name: "Remo en polea baja (agarre ancho)", target: "3 × 10–12 · Espalda media", sets: 3, rpe: "8" },
       { name: "Aperturas con mancuernas", target: "3 × 12–15 · Pecho", sets: 3, rpe: "9" },
       { name: "Elevaciones laterales en polea", target: "3 × 15–20 · Deltoides medial", sets: 3, rpe: "9" },
-      { name: "Curl predicador barra EZ", target: "2 × 12–15 · Bíceps", sets: 2, rpe: "9" },
-      { name: "Press francés con mancuernas", target: "2 × 12–15 · Tríceps", sets: 2, rpe: "9" },
+      { name: "Curl predicador barra EZ", target: "3 × 12–15 · Bíceps", sets: 3, rpe: "9" },
+      { name: "Press francés con mancuernas", target: "3 × 12–15 · Tríceps", sets: 3, rpe: "9" },
     ]
   },
   lower: {
@@ -63,7 +63,7 @@ const DAYS = {
       { name: "Hip Thrust con barra", target: "3 × 8–12 · Glúteos", sets: 3, rpe: "8" },
       { name: "Curl femoral sentado", target: "3 × 10–15 · Isquiotibiales", sets: 3, rpe: "9" },
       { name: "Zancadas caminando con mancuernas", target: "3 × 10–12/pierna · Cuádriceps", sets: 3, rpe: "8" },
-      { name: "Elevación de pantorrilla sentado", target: "3 × 15–20 · Sóleo", sets: 3, rpe: "9" },
+      { name: "Elevación de pantorrilla sentado", target: "5 × 15–20 · Sóleo", sets: 5, rpe: "9" },
     ]
   }
 };
